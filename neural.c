@@ -23,19 +23,29 @@ neural_feed_forward(struct neural_net_layer *head, float *x)
 	int rows;
 	int cols;
 
+	int a = 0;
 	while ((next = curr->next) != NULL) {
+		printf("layer %d\n", a++);
 		rows = curr->out_nodes;
 		cols = curr->in_nodes;
+
+		printf("rows %d cols %d\n", rows, cols);
+		printf("curr->bias %f %f\n", curr->bias[0], curr->bias[rows - 1]);
+		printf("curr->theta %f %f\n", curr->theta[0], curr->theta[cols * rows - 1]);
+		printf("curr->act %f %f\n", curr->act[0], curr->act[cols - 1]);
+		printf("next->act %f %f\n", next->act[0], next->act[rows - 1]);
 
 		/* act = theta * x + act */
 		memcpy(next->act, curr->bias, rows * sizeof(float));
 		cblas_sgemv(CblasRowMajor, CblasNoTrans, rows, cols, 1.0, curr->theta, 
 			cols, curr->act, 1, 1.0, next->act, 1);
 
+		printf("done with sgemv\n");
 		/* apply sigmoid function */
 		for (int i = 0; i < rows; i++) {
 			next->act[i] = 1.0 / (1 + expf(-next->act[i]));
 		}
+		printf("done with sigmoid\n");
 
 		/* transition to next layer */
 		curr = next;
@@ -91,7 +101,9 @@ neural_sgd_iteration(struct neural_net_layer *head, struct neural_net_layer *tai
 	int n_labels = head->in_nodes;
 
 	for (int i = 0; i < n_samples; i++) {
+		printf("row %d\n", i);
 		neural_feed_forward(head, features + i * n_features);
+		printf("feed forward done\n");
 		neural_back_prop(tail, labels + i * n_labels, alpha, lambda);
 	}
 }
