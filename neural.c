@@ -82,8 +82,6 @@ neural_back_prop(struct neural_net_layer *tail, float *y, const float alpha,
 	}
 }
 
-void blah(void) { return; }
-
 void
 neural_sgd_iteration(struct neural_net_layer *head, struct neural_net_layer *tail, 
 		float *features, float *labels, const int n_samples, 
@@ -94,9 +92,19 @@ neural_sgd_iteration(struct neural_net_layer *head, struct neural_net_layer *tai
 
 	for (int i = 0; i < n_samples; i++) {
 		neural_feed_forward(head, features + i * n_features);
-		if (i == 5990) {
-			blah();
-		}
 		neural_back_prop(tail, labels + i * n_labels, alpha, lambda);
+	}
+}
+
+void
+neural_predict_prob(struct neural_net_layer *head, struct neural_net_layer *tail,
+		float *features, float *preds, const int n_samples)
+{
+	int n_features = head->in_nodes;
+	int n_labels = tail->in_nodes;
+
+	for (int i = 0; i < n_samples; i++) {
+		neural_feed_forward(head, features + i * n_features);
+		memcpy(preds, tail->act, n_labels * sizeof(float));
 	}
 }

@@ -24,4 +24,8 @@ neural_sgd_iteration(struct neural_net_layer *head, struct neural_net_layer *tai
 		float *features, float *labels, const int n_samples, 
 		const float alpha, const float lambda);
 
+void
+neural_predict_prob(struct neural_net_layer *head, struct neural_net_layer *tail,
+		float *features, float *preds, const int n_samples);
+
 #endif

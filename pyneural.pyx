@@ -27,6 +27,9 @@ cdef extern from "neural.h":
             float *features, float *labels, const int n_samples, 
             const float alpha, const float lamb)
 
+    void neural_predict_prob(neural_net_layer *head, neural_net_layer *tail,
+            float *features, float *preds, int n_samples)
+
 cdef class NetLayer:
     cdef neural_net_layer _net_layer
     cdef NetLayer prev, next
@@ -41,10 +44,10 @@ cdef class NetLayer:
         self.theta = theta.copy(order='C').astype(np.float32)
         self._net_layer.theta = <float *>np.PyArray_DATA(self.theta)
 
-        self.act = np.zeros(in_nodes).astype(np.float32)
+        self.act = np.zeros(in_nodes, dtype=np.float32, order='C')
         self._net_layer.act = <float *>np.PyArray_DATA(self.act)
 
-        self.delta = np.zeros(in_nodes).astype(np.float32)
+        self.delta = np.zeros(in_nodes, dtype=np.float32, order='C')
         self._net_layer.delta = <float *>np.PyArray_DATA(self.delta)
 
         self._net_layer.in_nodes = in_nodes
@@ -93,10 +96,10 @@ cdef class NeuralNet:
         self.tail.set_prev(prev)
         prev.set_next(self.tail)
 
-    def _feed_forward(self, np.ndarray[float, ndim=2, mode="c"] x not None):
+    def _feed_forward(self, np.ndarray[float, ndim=1, mode="c"] x not None):
         neural_feed_forward(self.head.get_ptr(), <float *>np.PyArray_DATA(x))
 
-    def _back_prop(self, np.ndarray[float, ndim=2, mode="c"] y not None, alpha, lamb):
+    def _back_prop(self, np.ndarray[float, ndim=1, mode="c"] y not None, alpha, lamb):
         neural_back_prop(self.tail.get_ptr(), <float *>np.PyArray_DATA(y), alpha, lamb)
 
     def _sgd_iteration(self, np.ndarray[float, ndim=2, mode="c"] features not None, 
@@ -112,13 +115,31 @@ cdef class NeuralNet:
         assert features.shape[0] == labels.shape[0]
         assert features.shape[1] == self.n_features
         assert labels.shape[1] == self.n_labels
-        _features = features.copy(order='C').astype(np.float32)
-        _labels = labels.copy(order='C').astype(np.float32)
 
         for i in xrange(max_iter):
             start = time.time()
-            # TODO: shuffle
-            self._sgd_iteration(_features, _labels, alpha, lamb)
+            # shuffle data set
+            idx = np.random.permutation(features.shape[0])
+            _features = features[idx].copy(order='C').astype(np.float32)
+            _labels = labels[idx].copy(order='C').astype(np.float32)
+            print "data set shuffled"
+            neural_sgd_iteration(self.head.get_ptr(), self.tail.get_ptr(), 
+                    <float *>np.PyArray_DATA(features), <float *>np.PyArray_DATA(labels), 
+                    features.shape[0], alpha, lamb)
             end = time.time()
             print "iteration %d completed in %f seconds" % (i, end - start)
             alpha *= decay
+
+    def predict_prob(self, features):
+        assert isinstance(features, np.ndarray)
+        assert features.shape[1] == self.n_features
+
+        preds = np.zeros((features.shape[0], self.n_labels), dtype=np.float32, order='C')
+        neural_predict_prob(self.head.get_ptr(), self.tail.get_ptr(),
+                <float *>np.PyArray_DATA(features), <float *>np.PyArray_DATA(preds), 
+                features.shape[0])
+        return preds
+
+    def predict_label(self, features):
+        preds = self.predict_prob(features)
+        return np.argmax(preds, axis=1)
