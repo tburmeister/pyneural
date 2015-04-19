@@ -18,11 +18,6 @@ cdef extern from "neural.h":
         int in_nodes
         int out_nodes  
 
-    void neural_feed_forward(neural_net_layer *head, float *x)
-
-    void neural_back_prop(neural_net_layer *tail, float *y, 
-            const float alpha, const float lamb)
-
     void neural_sgd_iteration(neural_net_layer *head, neural_net_layer *tail,
             float *features, float *labels, const int n_samples, 
             const float alpha, const float lamb)
@@ -95,19 +90,6 @@ cdef class NeuralNet:
         self.tail = NetLayer(self.n_labels, 0)
         self.tail.set_prev(prev)
         prev.set_next(self.tail)
-
-    def _feed_forward(self, np.ndarray[float, ndim=1, mode="c"] x not None):
-        neural_feed_forward(self.head.get_ptr(), <float *>np.PyArray_DATA(x))
-
-    def _back_prop(self, np.ndarray[float, ndim=1, mode="c"] y not None, alpha, lamb):
-        neural_back_prop(self.tail.get_ptr(), <float *>np.PyArray_DATA(y), alpha, lamb)
-
-    def _sgd_iteration(self, np.ndarray[float, ndim=2, mode="c"] features not None, 
-                       np.ndarray[float, ndim=2, mode="c"] labels not None, 
-                       alpha, lamb):
-        neural_sgd_iteration(self.head.get_ptr(), self.tail.get_ptr(), 
-                <float *>np.PyArray_DATA(features), <float *>np.PyArray_DATA(labels), 
-                features.shape[0], alpha, lamb)
 
     def train(self, features, labels, max_iter, alpha, lamb, decay):
         assert isinstance(features, np.ndarray)
