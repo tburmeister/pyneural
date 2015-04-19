@@ -29,6 +29,8 @@ cdef extern from "neural.h":
 
 cdef class NetLayer:
     cdef neural_net_layer _net_layer
+    cdef NetLayer prev, next
+    cdef np.ndarray bias, theta, act, delta
 
     def __init__(self, in_nodes, out_nodes):
         bias = 0.24 * np.random.rand(out_nodes) - 0.12
@@ -48,40 +50,20 @@ cdef class NetLayer:
         self._net_layer.in_nodes = in_nodes
         self._net_layer.out_nodes = out_nodes
 
-    cdef void set_prev(self, prev):
+    cdef void set_prev(self, NetLayer prev):
         self.prev = prev
-        self._net_layer.prev = &(prev._net_layer)
+        self._net_layer.prev = &prev._net_layer
 
-    cdef void set_next(self, next):
+    cdef void set_next(self, NetLayer next):
         self.next = next
-        self._net_layer.next = &(next._net_layer)
+        self._net_layer.next = &next._net_layer
 
     cdef neural_net_layer *get_ptr(self):
-        return &(self._net_layer)
-
-cdef neural_net_layer *_random_layer(int in_nodes, int out_nodes):
-    cdef neural_net_layer *layer = <neural_net_layer *>malloc(sizeof(neural_net_layer))
-
-    bias = 0.24 * np.random.rand(out_nodes) - 0.12
-    bias = bias.copy(order='C').astype(np.float32)
-    layer.bias = <float *>np.PyArray_DATA(bias)
-
-    theta = 0.24 * np.random.rand(out_nodes * in_nodes) - 0.12
-    theta = theta.copy(order='C').astype(np.float32)
-    layer.theta = <float *>np.PyArray_DATA(theta)
-
-    act = np.zeros(in_nodes).astype(np.float32)
-    layer.act = <float *>np.PyArray_DATA(act)
-
-    delta = np.zeros(in_nodes).astype(np.float32)
-    layer.delta = <float *>np.PyArray_DATA(delta)
-
-    layer.in_nodes = in_nodes
-    layer.out_nodes = out_nodes
-    return layer
+        return &self._net_layer
 
 cdef class NeuralNet:
     cdef int n_features, n_labels, n_nodes, n_layers
+    cdef NetLayer head, tail
 
     def __init__(self, n_features, n_labels, n_nodes, n_layers):
         self.n_features = n_features
@@ -98,17 +80,12 @@ cdef class NeuralNet:
 
         for k in xrange(self.n_layers - 1):
             curr = NetLayer(self.n_nodes, self.n_nodes)
-            print "curr layer %d %d" % (curr.in_nodes, curr.out_nodes)
             curr.set_prev(prev)
             prev.set_next(curr)
             prev = curr
 
         curr = NetLayer(self.n_nodes, self.n_labels)
-        print "curr layer %d %d" % (curr.in_nodes, curr.out_nodes)
         curr.set_prev(prev)
-        print "prev layer %d %d" % (curr.prev.in_nodes, curr.prev.out_nodes)
-        print "prev layer %d %d" % (prev.in_nodes, prev.out_nodes)
-        print "head layer %d %d" % (self.head.in_nodes, self.head.out_nodes)
         prev.set_next(curr)
         prev = curr
 
@@ -138,15 +115,10 @@ cdef class NeuralNet:
         _features = features.copy(order='C').astype(np.float32)
         _labels = labels.copy(order='C').astype(np.float32)
 
-        print "features %d" % self.n_features
-        print "labels %d" % self.n_labels
-        print "nodes %d" % self.n_nodes
-        print "layers %d" % self.n_layers
-
         for i in xrange(max_iter):
             start = time.time()
             # TODO: shuffle
             self._sgd_iteration(_features, _labels, alpha, lamb)
             end = time.time()
-            print "iteration %d completed in %d seconds" % (i, end - start)
+            print "iteration %d completed in %f seconds" % (i, end - start)
             alpha *= decay
