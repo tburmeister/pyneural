@@ -105,6 +105,6 @@ neural_predict_prob(struct neural_net_layer *head, struct neural_net_layer *tail
 
 	for (int i = 0; i < n_samples; i++) {
 		neural_feed_forward(head, features + i * n_features);
-		memcpy(preds, tail->act, n_labels * sizeof(float));
+		memcpy(preds + i * n_labels, tail->act, n_labels * sizeof(float));
 	}
 }

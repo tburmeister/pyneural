@@ -106,7 +106,7 @@ cdef class NeuralNet:
             _labels = labels[idx].copy(order='C').astype(np.float32)
             print "data set shuffled"
             neural_sgd_iteration(self.head.get_ptr(), self.tail.get_ptr(), 
-                    <float *>np.PyArray_DATA(features), <float *>np.PyArray_DATA(labels), 
+                    <float *>np.PyArray_DATA(_features), <float *>np.PyArray_DATA(_labels), 
                     features.shape[0], alpha, lamb)
             end = time.time()
             print "iteration %d completed in %f seconds" % (i, end - start)
@@ -116,9 +116,10 @@ cdef class NeuralNet:
         assert isinstance(features, np.ndarray)
         assert features.shape[1] == self.n_features
 
+        _features = features.copy(order='C').astype(np.float32)
         preds = np.zeros((features.shape[0], self.n_labels), dtype=np.float32, order='C')
         neural_predict_prob(self.head.get_ptr(), self.tail.get_ptr(),
-                <float *>np.PyArray_DATA(features), <float *>np.PyArray_DATA(preds), 
+                <float *>np.PyArray_DATA(_features), <float *>np.PyArray_DATA(preds), 
                 features.shape[0])
         return preds
 
