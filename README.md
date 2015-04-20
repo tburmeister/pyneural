@@ -101,5 +101,5 @@ This is still very much a work in progress. I can't guarantee it will work on
 every platform, I'm sure there are plenty of ways for you to break it, and if
 you do break it, it probably won't give you helpful error messages. I will try
 to remedy all of these things, as well as add features and performance, in the
-future. I will also try add actual documentation to the code and docstrings to
+future. I will also try to add actual documentation to the code and docstrings to
 the functions.
