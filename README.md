@@ -44,6 +44,10 @@ Get the predicted classes/labels:
 Get the predicted probability of each class/label:  
 `predicted_prob = nn.predict_prob(features)`
 
+### Performance
+
+On my Core i5 MacBook Pro, PyNeural can perform 5 iterations over the Kaggle digits training set in approximately 45 seconds, versus 190 seconds for 5 iterations with OpenCV, a roughly 4x speed-up. 
+
 ### Example
 
 The code below trains a neural net on the MNIST digits data set.
