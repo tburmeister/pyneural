@@ -17,21 +17,21 @@ a neural network for classifiction.
 
 0. Make sure you have the cblas library installed, or Xcode if on a Mac.
 1. Clone the repo.
-2. If on a Mac:
+2. If on a Mac:  
 `CC=clang CFLAGS="-DACCELERATE -framework accelerate" python setup.py build_ext -i`  
-If on Linux:
-`CC=clang python setup.py build_ext -i`  
+If on Linux:  
+`CC=clang CFLAGS="-I/path/to/cblas/include -L/path/to/cblas/lib -lcblas" python setup.py build_ext -i`  
 (Note: I realize this is hacky - will add a proper makefile or install script
 later.)
 
-### Use
+### Usage Example
 
 Import the library:  
 `import pyneural`
 
 Initialize a neural net with 784 input features, 10 output classes, and 1
 intermediate layer of 400 nodes:  
-`nn = pyneural.NeuralNet(784, 10, 400, 1)`
+`nn = pyneural.NeuralNet([784, 400, 10])`
 
 Train the network over 5 iterations of the training set with an alpha (gradient
 descent coefficient) of 0.01, an L2 penalty of 0.0, and a decay multiplier of
@@ -48,7 +48,7 @@ Get the predicted probability of each class/label:
 
 On my Core i5 MacBook Pro, PyNeural can perform 5 iterations over the Kaggle digits training set in approximately 45 seconds, versus 190 seconds for 5 iterations with OpenCV, a roughly 4x speed-up. 
 
-### Example
+### Full Example
 
 The code below trains a neural net on the MNIST digits data set.
 The neural net trained below has 784 input features, 10 output labels, and one
@@ -73,7 +73,7 @@ challenge.
     for i in xrange(n_rows):
         labels_expanded[i][labels[i]] = 1
 
-    nn = pyneural.NeuralNet(n_features, n_labels, 400, 1)
+    nn = pyneural.NeuralNet([n_features, 400, n_labels])
     nn.train(features, labels_expanded, 5, 0.01, 0.0, 1.0)
 
     data set shuffled
@@ -88,13 +88,9 @@ challenge.
     iteration 4 completed in 9.771301 seconds
 
     preds = nn.predict_label(features)
-    
-    correct = 0
-    for i in xrange(n_rows):
-        if preds[i] == labels[i]:
-            correct += 1
-            
-    print "%f%% percent correct on training set" % (100.0 * correct / n_rows)
+    n_correct = np.sum(preds == labels)
+ 
+    print "%f%% percent correct on training set" % (100.0 * n_correct / n_rows)
 
     97.040476% percent correct 
 

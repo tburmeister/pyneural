@@ -60,34 +60,30 @@ cdef class NetLayer:
         return &self._net_layer
 
 cdef class NeuralNet:
-    cdef int n_features, n_labels, n_nodes, n_layers
+    cdef list layers
+    cdef int n_features, n_labels
     cdef NetLayer head, tail
 
-    def __init__(self, n_features, n_labels, n_nodes, n_layers):
-        self.n_features = n_features
-        self.n_labels = n_labels
-        self.n_nodes = n_nodes
-        self.n_layers = n_layers
+    def __init__(self, layers):
+        assert len(layers) >= 2
+        self.layers = list(layers)
+        self.n_features = self.layers[0]
+        self.n_labels = self.layers[-1]
         self.head = None
         self.tail = None
         self.random_init()
 
     def random_init(self):
-        self.head = NetLayer(self.n_features, self.n_nodes)
+        self.head = NetLayer(self.layers[0], self.layers[1])
         prev = self.head
 
-        for k in xrange(self.n_layers - 1):
-            curr = NetLayer(self.n_nodes, self.n_nodes)
+        for k in xrange(1, len(self.layers) - 1):
+            curr = NetLayer(self.layers[k], self.layers[k + 1])
             curr.set_prev(prev)
             prev.set_next(curr)
             prev = curr
 
-        curr = NetLayer(self.n_nodes, self.n_labels)
-        curr.set_prev(prev)
-        prev.set_next(curr)
-        prev = curr
-
-        self.tail = NetLayer(self.n_labels, 0)
+        self.tail = NetLayer(self.layers[-1], 0)
         self.tail.set_prev(prev)
         prev.set_next(self.tail)
 
