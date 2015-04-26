@@ -65,6 +65,27 @@ cdef class NeuralNet:
     cdef NetLayer head, tail
 
     def __init__(self, layers):
+        """
+        Initialize a new neural network object.
+
+        Args:
+            layers (list of integers): The number of nodes at each layer of the
+                network. The first value should be the number of input features
+                and the last value should be the number of output labels;
+                intermediate values, if any, are the number of nodes in the
+                hidden layers.
+
+        Returns:
+            class NeuralNet: a new neural network object, with model parameters
+                randomly initialized using self.random_init().
+
+        Example: 
+            Create a new neural network with 784 input features, 10 output
+            layers, and one hidden layer of 400 nodes.
+
+            >>> nn = pyneural.NeuralNet([784, 400, 10])
+
+        """
         assert len(layers) >= 2
         self.layers = list(layers)
         self.n_features = self.layers[0]
@@ -74,6 +95,10 @@ cdef class NeuralNet:
         self.random_init()
 
     def random_init(self):
+        """
+        Randomly initialize the model parameters of the neural network.
+
+        """
         self.head = NetLayer(self.layers[0], self.layers[1])
         prev = self.head
 
@@ -88,6 +113,36 @@ cdef class NeuralNet:
         prev.set_next(self.tail)
 
     def train(self, features, labels, max_iter, alpha, lamb, decay):
+        """
+        Train the neural network on a training set with known output labels.
+
+        Args:
+            features (2-dim'l numpy.ndarray): A row for each training example
+                consisting of that examples features.
+            labels (2-dim'l numpy.ndarray): A row for each training example and
+                column for each output label, denoting whether the example
+                belongs to that class (1) or not (0).
+            max_iter (int): The number of times to iterate over the training set.
+            alpha (float): The gradient descent learning rate.
+            lamb (float): The L2 penalty coefficient.
+            decay (float): The amount to multiply the learning rate by after
+                each iteration over the training set.
+
+        Example:
+            Train a neural network on a small training set learning rate 0.1,
+            no L2 penalty, and no learning rate decay over 10 iterations.
+
+            >>> features = np.array([[1, 0, 1, 0], [0, 1, 0, 1]])
+            array([[1, 0, 1, 0],
+                   [0, 1, 0, 1]])
+
+            >>> labels = np.array([[1, 0], [0, 1]])
+            array([[1, 0],
+                   [0, 1]])
+
+            >>> nn.train(features, labels, 10, 0.1, 0.0, 1.0)
+
+        """
         assert isinstance(features, np.ndarray)
         assert isinstance(labels, np.ndarray)
         assert features.shape[0] == labels.shape[0]
@@ -109,6 +164,19 @@ cdef class NeuralNet:
             alpha *= decay
 
     def predict_prob(self, features):
+        """
+        Given a set of example features, predict the probabilities of each
+        example belonging to each label.
+
+        Args:
+            features (2-dim'l numpy.ndarray): A row for each example consisting
+                of its features.
+
+        Returns:
+            2-dim'l numpy.ndarray: The probabilities of each example belonging
+                to each output label.
+
+        """
         assert isinstance(features, np.ndarray)
         assert features.shape[1] == self.n_features
 
@@ -120,5 +188,17 @@ cdef class NeuralNet:
         return preds
 
     def predict_label(self, features):
+        """
+        Given a set of example features, predict the most probable output label
+        for each example.
+
+        Args:
+            features (2-dim'l numpy.ndarray): A row for each example consisting
+                of its features.
+
+        Returns:
+            1-dim'l numpy.ndarray: The most probable label for each example.
+
+        """
         preds = self.predict_prob(features)
         return np.argmax(preds, axis=1)
