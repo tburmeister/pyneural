@@ -19,16 +19,17 @@ cdef extern from "neural.h":
         int out_nodes  
 
     void neural_sgd_iteration(neural_net_layer *head, neural_net_layer *tail,
-            float *features, float *labels, const int n_samples, 
+            float *features, float *labels, const int n_samples, const int batch_size,
             const float alpha, const float lamb)
 
     void neural_predict_prob(neural_net_layer *head, neural_net_layer *tail,
-            float *features, float *preds, int n_samples)
+            float *features, float *preds, int n_samples, int batch_size)
 
 cdef class NetLayer:
     cdef neural_net_layer _net_layer
     cdef NetLayer prev, next
     cdef np.ndarray bias, theta, act, delta
+    cdef int in_nodes, out_nodes
 
     def __init__(self, in_nodes, out_nodes):
         bias = 0.24 * np.random.rand(out_nodes) - 0.12
@@ -39,14 +40,15 @@ cdef class NetLayer:
         self.theta = theta.copy(order='C').astype(np.float32)
         self._net_layer.theta = <float *>np.PyArray_DATA(self.theta)
 
-        self.act = np.zeros(in_nodes, dtype=np.float32, order='C')
+        self._net_layer.in_nodes = self.in_nodes = in_nodes
+        self._net_layer.out_nodes = self.out_nodes = out_nodes
+
+    def set_batch(self, batch_size):
+        self.act = np.zeros(self.in_nodes * batch_size, dtype=np.float32, order='C')
         self._net_layer.act = <float *>np.PyArray_DATA(self.act)
 
-        self.delta = np.zeros(in_nodes, dtype=np.float32, order='C')
+        self.delta = np.zeros(self.in_nodes * batch_size, dtype=np.float32, order='C')
         self._net_layer.delta = <float *>np.PyArray_DATA(self.delta)
-
-        self._net_layer.in_nodes = in_nodes
-        self._net_layer.out_nodes = out_nodes
 
     cdef void set_prev(self, NetLayer prev):
         self.prev = prev
@@ -112,7 +114,7 @@ cdef class NeuralNet:
         self.tail.set_prev(prev)
         prev.set_next(self.tail)
 
-    def train(self, features, labels, max_iter, alpha, lamb, decay):
+    def train(self, features, labels, max_iter, batch_size, alpha, lamb, decay):
         """
         Train the neural network on a training set with known output labels.
 
@@ -123,6 +125,7 @@ cdef class NeuralNet:
                 column for each output label, denoting whether the example
                 belongs to that class (1) or not (0).
             max_iter (int): The number of times to iterate over the training set.
+            batch_size (int): The mini-batch size.
             alpha (float): The gradient descent learning rate.
             lamb (float): The L2 penalty coefficient.
             decay (float): The amount to multiply the learning rate by after
@@ -130,7 +133,8 @@ cdef class NeuralNet:
 
         Example:
             Train a neural network on a small training set learning rate 0.1,
-            no L2 penalty, and no learning rate decay over 10 iterations.
+            no L2 penalty, and no learning rate decay over 10 iterations, with
+            a mini-batch size of 100.
 
             >>> features = np.array([[1, 0, 1, 0], [0, 1, 0, 1]])
             array([[1, 0, 1, 0],
@@ -140,7 +144,7 @@ cdef class NeuralNet:
             array([[1, 0],
                    [0, 1]])
 
-            >>> nn.train(features, labels, 10, 0.1, 0.0, 1.0)
+            >>> nn.train(features, labels, 10, 100, 0.1, 0.0, 1.0)
 
         """
         assert isinstance(features, np.ndarray)
@@ -148,6 +152,12 @@ cdef class NeuralNet:
         assert features.shape[0] == labels.shape[0]
         assert features.shape[1] == self.n_features
         assert labels.shape[1] == self.n_labels
+
+        # allocate space based on batch size
+        curr = self.head
+        while curr != None:
+            curr.set_batch(batch_size)
+            curr = curr.next
 
         for i in xrange(max_iter):
             start = time.time()
@@ -158,12 +168,12 @@ cdef class NeuralNet:
             print "data set shuffled"
             neural_sgd_iteration(self.head.get_ptr(), self.tail.get_ptr(), 
                     <float *>np.PyArray_DATA(_features), <float *>np.PyArray_DATA(_labels), 
-                    features.shape[0], alpha, lamb)
+                    features.shape[0], batch_size, alpha, lamb)
             end = time.time()
             print "iteration %d completed in %f seconds" % (i, end - start)
             alpha *= decay
 
-    def predict_prob(self, features):
+    def predict_prob(self, features, batch_size):
         """
         Given a set of example features, predict the probabilities of each
         example belonging to each label.
@@ -184,10 +194,10 @@ cdef class NeuralNet:
         preds = np.zeros((features.shape[0], self.n_labels), dtype=np.float32, order='C')
         neural_predict_prob(self.head.get_ptr(), self.tail.get_ptr(),
                 <float *>np.PyArray_DATA(_features), <float *>np.PyArray_DATA(preds), 
-                features.shape[0])
+                features.shape[0], batch_size)
         return preds
 
-    def predict_label(self, features):
+    def predict_label(self, features, batch_size):
         """
         Given a set of example features, predict the most probable output label
         for each example.
@@ -200,5 +210,5 @@ cdef class NeuralNet:
             1-dim'l numpy.ndarray: The most probable label for each example.
 
         """
-        preds = self.predict_prob(features)
+        preds = self.predict_prob(features, batch_size)
         return np.argmax(preds, axis=1)
