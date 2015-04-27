@@ -152,7 +152,7 @@ cdef class NeuralNet:
         assert features.shape[0] == labels.shape[0]
         assert features.shape[1] == self.n_features
         assert labels.shape[1] == self.n_labels
-        assert 0 < batch_size < features.shape[0]
+        assert 0 < batch_size <= features.shape[0]
 
         # allocate space based on batch size
         self.batch_size = batch_size

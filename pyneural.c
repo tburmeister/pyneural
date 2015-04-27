@@ -2676,7 +2676,7 @@ static PyObject *__pyx_pf_8pyneural_9NeuralNet_4train(struct __pyx_obj_8pyneural
  *         assert features.shape[0] == labels.shape[0]
  *         assert features.shape[1] == self.n_features             # <<<<<<<<<<<<<<
  *         assert labels.shape[1] == self.n_labels
- *         assert 0 < batch_size < features.shape[0]
+ *         assert 0 < batch_size <= features.shape[0]
  */
   #ifndef CYTHON_WITHOUT_ASSERTIONS
   if (unlikely(!Py_OptimizeFlag)) {
@@ -2703,7 +2703,7 @@ static PyObject *__pyx_pf_8pyneural_9NeuralNet_4train(struct __pyx_obj_8pyneural
  *         assert features.shape[0] == labels.shape[0]
  *         assert features.shape[1] == self.n_features
  *         assert labels.shape[1] == self.n_labels             # <<<<<<<<<<<<<<
- *         assert 0 < batch_size < features.shape[0]
+ *         assert 0 < batch_size <= features.shape[0]
  * 
  */
   #ifndef CYTHON_WITHOUT_ASSERTIONS
@@ -2730,7 +2730,7 @@ static PyObject *__pyx_pf_8pyneural_9NeuralNet_4train(struct __pyx_obj_8pyneural
   /* "pyneural.pyx":155
  *         assert features.shape[1] == self.n_features
  *         assert labels.shape[1] == self.n_labels
- *         assert 0 < batch_size < features.shape[0]             # <<<<<<<<<<<<<<
+ *         assert 0 < batch_size <= features.shape[0]             # <<<<<<<<<<<<<<
  * 
  *         # allocate space based on batch size
  */
@@ -2744,7 +2744,7 @@ static PyObject *__pyx_pf_8pyneural_9NeuralNet_4train(struct __pyx_obj_8pyneural
       __pyx_t_2 = __Pyx_GetItemInt(__pyx_t_3, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 155; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
       __Pyx_GOTREF(__pyx_t_2);
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-      __pyx_t_4 = PyObject_RichCompare(__pyx_v_batch_size, __pyx_t_2, Py_LT); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 155; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_4 = PyObject_RichCompare(__pyx_v_batch_size, __pyx_t_2, Py_LE); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 155; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     }
     __pyx_t_1 = __Pyx_PyObject_IsTrue(__pyx_t_4); if (unlikely(__pyx_t_1 < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 155; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
