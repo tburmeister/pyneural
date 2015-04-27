@@ -45,6 +45,36 @@ neural_feed_forward(struct neural_net_layer *head, float *x, int batch_size)
 }
 
 void 
+neural_sgd_feed_forward(struct neural_net_layer *head, float *x) 
+{
+	/* point "current" layer to head and set input as feature array x */
+	struct neural_net_layer *curr = head;
+	struct neural_net_layer *next;
+	curr->act = x;
+
+	int rows;
+	int cols;
+
+	while ((next = curr->next) != NULL) {
+		rows = curr->out_nodes;
+		cols = curr->in_nodes;
+
+		/* act = theta * x + act */
+		memcpy(next->act, curr->bias, rows * sizeof(float));
+		cblas_sgemv(CblasRowMajor, CblasNoTrans, rows, cols, 1.0, curr->theta, 
+			cols, curr->act, 1, 1.0, next->act, 1);
+
+		/* apply sigmoid function */
+		for (int i = 0; i < rows; i++) {
+			next->act[i] = 1.0 / (1 + expf(-next->act[i]));
+		}
+
+		/* transition to next layer */
+		curr = next;
+	}
+}
+
+void 
 neural_back_prop(struct neural_net_layer *tail, float *y, const int batch_size,
 		const float alpha, const float lambda) 
 {
@@ -87,19 +117,70 @@ neural_back_prop(struct neural_net_layer *tail, float *y, const int batch_size,
 	}
 }
 
+void 
+neural_sgd_back_prop(struct neural_net_layer *tail, float *y, const float alpha, 
+		const float lambda) 
+{
+	/* get delta from final predictions vs. actual; delta = a - y */
+	cblas_scopy(tail->in_nodes, tail->act, 1, tail->delta, 1);
+	cblas_saxpy(tail->in_nodes, -1.0, y, 1, tail->delta, 1);
+
+	struct neural_net_layer *curr;
+	struct neural_net_layer *prev;
+	int rows;
+	int cols;
+
+	for (curr = tail; curr->prev != NULL; curr = prev) {
+		prev = curr->prev;
+		rows = prev->out_nodes;
+		cols = prev->in_nodes;
+
+		/* delta^(n-1) = theta^(n-1)T * delta^(n) .* a^(n-1) (1 - a^(n-1)) */
+		cblas_sgemv(CblasRowMajor, CblasTrans, rows, cols, 1.0, prev->theta, 
+				cols, curr->delta, 1, 0.0, prev->delta, 1); 
+		for (int j = 0; j < cols; j++) {
+			prev->delta[j] *= (prev->act[j] * (1 - prev->act[j]));
+		}
+	}
+
+	for (curr = tail; curr->prev != NULL; curr = prev) {
+		prev = curr->prev;
+		rows = prev->out_nodes;
+		cols = prev->in_nodes;
+
+		/* bias -= alpha * delta */
+		cblas_saxpy(rows, -alpha, curr->delta, 1, prev->bias, 1);
+
+		/* theta -= alpha * (delta * actT + lambda * theta) */
+		cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, rows, cols, 1, -alpha, 
+				curr->delta, 1, prev->act, cols, 1 - alpha * lambda, prev->theta, cols);
+	}
+}
+
 void
-neural_sgd_iteration(struct neural_net_layer *head, struct neural_net_layer *tail, 
+neural_train_iteration(struct neural_net_layer *head, struct neural_net_layer *tail, 
 		float *features, float *labels, const int n_samples, const int batch_size, 
 		const float alpha, const float lambda)
 {
 	int n_features = head->in_nodes;
 	int n_labels = tail->in_nodes;
 
-	/* Note: as implemented, will just skip last few examples if n_rows not
-	 * divisible by batch size */
-	for (int i = 0; i < n_samples / batch_size; i++) {
-		neural_feed_forward(head, features + i * n_features * batch_size, batch_size);
-		neural_back_prop(tail, labels + i * n_labels * batch_size, batch_size, alpha, lambda);
+	if (batch_size == 1) {
+		for (int i = 0; i < n_samples; i++) {
+			neural_sgd_feed_forward(head, features + i * n_features);
+			neural_sgd_back_prop(tail, labels + i * n_labels, alpha, lambda);
+		}
+	} else {
+		for (int i = 0; i < n_samples / batch_size; i++) {
+			neural_feed_forward(head, features + i * n_features * batch_size, batch_size);
+			neural_back_prop(tail, labels + i * n_labels * batch_size, batch_size, alpha, lambda);
+		}
+
+		/* take care of remaining examples individually */
+		for (int i = (n_samples / batch_size) * batch_size; i < n_samples; i++) {
+			neural_sgd_feed_forward(head, features + i * n_features);
+			neural_sgd_back_prop(tail, labels + i * n_labels, alpha, lambda);
+		}
 	}
 }
 
@@ -110,15 +191,22 @@ neural_predict_prob(struct neural_net_layer *head, struct neural_net_layer *tail
 	int n_features = head->in_nodes;
 	int n_labels = tail->in_nodes;
 
-	for (int i = 0; i < n_samples / batch_size; i++) {
-		neural_feed_forward(head, features + i * n_features * batch_size, batch_size);
-		memcpy(preds + i * n_labels * batch_size, tail->act, 
-				n_labels * batch_size * sizeof(float));
-	}
+	if (batch_size == 1) {
+		for (int i = 0; i < n_samples; i++) {
+			neural_sgd_feed_forward(head, features + i * n_features);
+			memcpy(preds + i * n_labels, tail->act, n_labels * sizeof(float));
+		}
+	} else {
+		for (int i = 0; i < n_samples / batch_size; i++) {
+			neural_feed_forward(head, features + i * n_features * batch_size, batch_size);
+			memcpy(preds + i * n_labels * batch_size, tail->act, 
+					n_labels * batch_size * sizeof(float));
+		}
 
-	/* take care of remaining examples individually */
-	for (int i = (n_samples / batch_size) * batch_size; i < n_samples; i++) {
-		neural_feed_forward(head, features + i * n_features, 1);
-		memcpy(preds + i * n_labels, tail->act, n_labels * sizeof(float));
+		/* take care of remaining examples individually */
+		for (int i = (n_samples / batch_size) * batch_size; i < n_samples; i++) {
+			neural_sgd_feed_forward(head, features + i * n_features);
+			memcpy(preds + i * n_labels, tail->act, n_labels * sizeof(float));
+		}
 	}
 }

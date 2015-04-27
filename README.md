@@ -33,10 +33,11 @@ Initialize a neural net with 784 input features, 10 output classes, and 1
 intermediate layer of 400 nodes:  
 `nn = pyneural.NeuralNet([784, 400, 10])`
 
-Train the network over 5 iterations of the training set with an alpha (gradient
-descent coefficient) of 0.01, an L2 penalty of 0.0, and a decay multiplier of
-1.0 (meaning alpha does not decrease with each iteration):  
-`nn.train(features, labels, 5, 0.01, 0.0, 1.0)`
+Train the network over 5 iterations of the training set with a mini-batch size
+of 100, an alpha (gradient descent coefficient) of 0.01, an L2 penalty of 0.0,
+and a decay multiplier of 1.0 (meaning alpha does not decrease with each
+iteration):  
+`nn.train(features, labels, 5, 100, 0.01, 0.0, 1.0)`
 
 Get the predicted classes/labels:  
 `prediction = nn.predict_label(features)`
@@ -46,7 +47,10 @@ Get the predicted probability of each class/label:
 
 ### Performance
 
-On my Core i5 MacBook Pro, PyNeural can perform 5 iterations over the Kaggle digits training set in approximately 45 seconds, versus 190 seconds for 5 iterations with OpenCV, a roughly 4x speed-up. 
+On my Core i5 MacBook Pro, PyNeural can perform 5 iterations over the Kaggle
+digits training set in approximately 45 seconds with a mini-batch size of 1, or
+11 seconds with a mini-batch size of 200, versus 190 seconds for 5 iterations
+with OpenCV, a roughly 4x to 17x speed-up. 
 
 ### Full Example
 
@@ -74,7 +78,7 @@ challenge.
         labels_expanded[i][labels[i]] = 1
 
     nn = pyneural.NeuralNet([n_features, 400, n_labels])
-    nn.train(features, labels_expanded, 5, 0.01, 0.0, 1.0)
+    nn.train(features, labels_expanded, 5, 1, 0.01, 0.0, 1.0)
 
     data set shuffled
     iteration 0 completed in 9.897468 seconds
@@ -101,5 +105,4 @@ This is still very much a work in progress. I can't guarantee it will work on
 every platform, I'm sure there are plenty of ways for you to break it, and if
 you do break it, it probably won't give you helpful error messages. I will try
 to remedy all of these things, as well as add features and performance, in the
-future. I will also try to add actual documentation to the code and docstrings to
-the functions.
+future.
