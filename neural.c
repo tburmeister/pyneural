@@ -164,22 +164,24 @@ neural_train_iteration(struct neural_net_layer *head, struct neural_net_layer *t
 {
 	int n_features = head->in_nodes;
 	int n_labels = tail->in_nodes;
+	int i;
 
 	if (batch_size == 1) {
-		for (int i = 0; i < n_samples; i++) {
+		for (i = 0; i < n_samples; i++) {
 			neural_sgd_feed_forward(head, features + i * n_features);
 			neural_sgd_back_prop(tail, labels + i * n_labels, alpha, lambda);
 		}
 	} else {
-		for (int i = 0; i < n_samples / batch_size; i++) {
+		for (i = 0; i < n_samples / batch_size; i++) {
 			neural_feed_forward(head, features + i * n_features * batch_size, batch_size);
 			neural_back_prop(tail, labels + i * n_labels * batch_size, batch_size, alpha, lambda);
 		}
 
-		/* take care of remaining examples individually */
-		for (int i = (n_samples / batch_size) * batch_size; i < n_samples; i++) {
-			neural_sgd_feed_forward(head, features + i * n_features);
-			neural_sgd_back_prop(tail, labels + i * n_labels, alpha, lambda);
+		/* take care of remaining examples */
+		int remainder = n_samples % batch_size;
+		if (remainder > 0) {
+			neural_feed_forward(head, features + i * n_features * batch_size, remainder);
+			neural_back_prop(tail, labels + i * n_labels * batch_size, remainder, alpha, lambda);
 		}
 	}
 }
@@ -190,23 +192,26 @@ neural_predict_prob(struct neural_net_layer *head, struct neural_net_layer *tail
 {
 	int n_features = head->in_nodes;
 	int n_labels = tail->in_nodes;
+	int i;
 
 	if (batch_size == 1) {
-		for (int i = 0; i < n_samples; i++) {
+		for (i = 0; i < n_samples; i++) {
 			neural_sgd_feed_forward(head, features + i * n_features);
 			memcpy(preds + i * n_labels, tail->act, n_labels * sizeof(float));
 		}
 	} else {
-		for (int i = 0; i < n_samples / batch_size; i++) {
+		for (i = 0; i < n_samples / batch_size; i++) {
 			neural_feed_forward(head, features + i * n_features * batch_size, batch_size);
 			memcpy(preds + i * n_labels * batch_size, tail->act, 
 					n_labels * batch_size * sizeof(float));
 		}
 
-		/* take care of remaining examples individually */
-		for (int i = (n_samples / batch_size) * batch_size; i < n_samples; i++) {
-			neural_sgd_feed_forward(head, features + i * n_features);
-			memcpy(preds + i * n_labels, tail->act, n_labels * sizeof(float));
+		/* take care of remaining examples */
+		int remainder = n_samples % batch_size;
+		if (remainder > 0) {
+			neural_feed_forward(head, features + i * n_features * batch_size, remainder);
+			memcpy(preds + i * n_labels * batch_size, tail->act,
+					n_labels * remainder * sizeof(float));
 		}
 	}
 }
