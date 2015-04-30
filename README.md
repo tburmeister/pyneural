@@ -103,7 +103,7 @@ challenge.
 
 Using mini-batches can significantly speed up the computation time of each iteration over the training set, but I have observed that increasing the mini-batch size only increases speed up to a point. For example, in the example above, (at least on my laptop) a mini-batch size of 100 is faster than a mini-batch size of 50, but a mini-batch size of 500 is slower. Further, the code uses slightly different computations for mini-batches of size 1, so a mini-batch of size 1 will be faster than a mini-batch of some small size greater than 1.
 
-Additionally, increasing the size of the mini-batch decreases the rate of convergence (http://www.cs.cmu.edu/~muli/file/minibatch_sgd.pdf), so even though increasing the size of the mini-batch may increase the speed of each iteration, it also decreases the relative utility of that iteration. I'm not really sure what the best balance is, but anecdotally a mini-batch of size 100 seems to be a good default for this library.
+Additionally, increasing the size of the mini-batch decreases the rate of convergence ([source](http://www.cs.cmu.edu/~muli/file/minibatch_sgd.pdf)), so even though increasing the size of the mini-batch may increase the speed of each iteration, it also decreases the relative utility of that iteration. I'm not really sure what the best balance is, but anecdotally a mini-batch of size 100 seems to be a good default for this library.
 
 ### Word of Warning
 
