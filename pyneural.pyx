@@ -50,6 +50,19 @@ cdef class NetLayer:
         self.delta = np.zeros(self.in_nodes * batch_size, dtype=np.float32, order='C')
         self._net_layer.delta = <float *>np.PyArray_DATA(self.delta)
 
+    def get_params(self):
+        return self.bias, self.theta
+
+    def set_params(self, bias, theta):
+        assert np.size(bias) == self.out_nodes
+        assert np.size(theta) == self.out_nodes * self.in_nodes
+
+        self.bias = bias.copy(order='C').astype(np.float32)
+        self._net_layer.bias = <float *>np.PyArray_DATA(self.bias)
+
+        self.theta = theta.copy(order='C').astype(np.float32)
+        self._net_layer.theta = <float *>np.PyArray_DATA(self.theta)
+
     cdef void set_prev(self, NetLayer prev):
         self.prev = prev
         self._net_layer.prev = &prev._net_layer
@@ -214,3 +227,38 @@ cdef class NeuralNet:
         """
         preds = self.predict_prob(features)
         return np.argmax(preds, axis=1)
+
+    def get_params(self):
+        """
+        Return the model parameters of a list of (bias, theta) tuples for each
+        layer of the neural net.
+
+        Returns:
+            array of tuples of numpy.ndarray: The bias and theta parameters for
+                level of the net.
+        """
+        out = []
+        curr = self.head
+        while curr != None:
+            out.append(curr.get_params())
+            curr = curr.next
+
+        return out
+
+    def set_params(self, params):
+        """
+        Set the model parameters from a list of (bias, theta) tuples for each
+        layer of the neural net.
+
+        Args:
+            array of tuples of numpy.ndarray: The bias and theta parameters for
+                level of the net.
+        """
+        assert len(params) == len(self.layers)
+
+        curr = self.head
+        i = 0
+        while curr != None:
+            curr.set_params(params[i][0], params[i][1])
+            curr = curr.next
+            i += 1
