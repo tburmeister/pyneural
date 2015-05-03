@@ -50,7 +50,9 @@ Get the predicted probability of each class/label:
 On my Core i5 MacBook Pro, PyNeural can perform 5 iterations over the Kaggle
 digits training set in approximately 45 seconds with a mini-batch size of 1, or
 11 seconds with a mini-batch size of 200, versus 190 seconds for 5 iterations
-with OpenCV, a roughly 4x to 17x speed-up. 
+with OpenCV, a roughly 4x to 17x speed-up.
+
+For an example of the code that I used to achieve 99% accuracy on the Kaggle digit recognizer challenge with a training time of roughly 30 minutes, see `kaggle_digit_example.ipynb`.
 
 ### Full Example
 
