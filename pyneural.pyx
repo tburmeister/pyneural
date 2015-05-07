@@ -127,7 +127,8 @@ cdef class NeuralNet:
         self.tail.set_prev(prev)
         prev.set_next(self.tail)
 
-    def train(self, features, labels, max_iter, batch_size, alpha, lamb, decay):
+    def train(self, features, labels, max_iter, batch_size=100, alpha=0.01,
+              lamb=0.0, decay=1.0, info=1):
         """
         Train the neural network on a training set with known output labels.
 
@@ -143,6 +144,8 @@ cdef class NeuralNet:
             lamb (float): The L2 penalty coefficient.
             decay (float): The amount to multiply the learning rate by after
                 each iteration over the training set.
+            info (int): How many interation to run between showing runtime info.
+                If info <= 0, no info will be shown.
 
         Example:
             Train a neural network on a small training set learning rate 0.1,
@@ -174,19 +177,21 @@ cdef class NeuralNet:
             curr.set_batch(batch_size)
             curr = curr.next
 
+        start = time.time()
         for i in xrange(max_iter):
-            start = time.time()
             # shuffle data set
             idx = np.random.permutation(features.shape[0])
             _features = features[idx].copy(order='C').astype(np.float32)
             _labels = labels[idx].copy(order='C').astype(np.float32)
-            print "data set shuffled"
             neural_train_iteration(self.head.get_ptr(), self.tail.get_ptr(), 
                     <float *>np.PyArray_DATA(_features), <float *>np.PyArray_DATA(_labels), 
                     features.shape[0], batch_size, alpha, lamb)
-            end = time.time()
-            print "iteration %d completed in %f seconds" % (i, end - start)
             alpha *= decay
+
+            if info > 0 and (i + 1) % info == 0:
+                end = time.time()
+                print "iteration %d completed; avg run time %f seconds" % (i + 1, (end - start) / info)
+                start = time.time()
 
     def predict_prob(self, features):
         """
