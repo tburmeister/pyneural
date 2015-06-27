@@ -17,11 +17,8 @@ a neural network for classifiction.
 
 0. Make sure you have the cblas library installed, or Xcode if on a Mac. If using a Mac, I recommend using Xcode's Accelerate framework, which includes a BLAS implementation. Otherwise, check out [OpenBLAS](https://github.com/xianyi/OpenBLAS).
 1. Clone the repo.
-2. If on a Mac:  
-`python setup.py build_ext`  
-`python setup.py install`  
-If on Linux:  
-`CFLAGS="-I/path/to/cblas/include -L/path/to/cblas/lib -lcblas" python setup.py build_ext`  
+1.1 If using OpenBLAS, you may need to edit `include_dirs` and `library_dirs` in `setup.py` to reflect your install location - it comes set to the default install location for OpenBLAS.
+2. `python setup.py build_ext`  
 `python setup.py install`  
 (Note: you may need `sudo` for the install part.)
 
