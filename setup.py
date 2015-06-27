@@ -13,10 +13,12 @@ if sys.platform == 'darwin':
     extra_link_args = ['-framework', 'accelerate']
 else:
     # up to the user for now
-    extra_compile_args = []
-    extra_link_args = []
+    extra_compile_args = ['-std=c99']
+    include_dirs.append('/opt/OpenBLAS/include')
+    library_dirs = ['/opt/OpenBLAS/lib']
+    libraries = ['openblas', 'm']
 
 ext = Extension("pyneural", sources=sources, include_dirs=include_dirs, 
-        extra_compile_args=extra_compile_args, extra_link_args=extra_link_args)
+        library_dirs=library_dirs, libraries=libraries, extra_compile_args=extra_compile_args)
 
 setup(ext_modules=cythonize([ext]))
