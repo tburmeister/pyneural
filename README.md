@@ -22,6 +22,8 @@ a neural network for classifiction.
 `python setup.py install`  
 (Note: you may need `sudo` for the install part.)
 
+If on Linux, you may need to set `LD_LIBRARY_PATH` to `/opt/OpenBLAS/lib` (assuming that's where you have installed OpenBLAS).
+
 ### Usage Example
 
 Import the library:  
