@@ -4,7 +4,7 @@ from Cython.Build import cythonize
 import numpy
 import sys
 
-sources = ['pyneural.pyx', 'neural.c']
+sources = ['src/pyneural.pyx', 'src/neural.c']
 include_dirs = [numpy.get_include()]
 
 if sys.platform == 'darwin':
