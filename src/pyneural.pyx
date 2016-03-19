@@ -108,6 +108,7 @@ cdef class NeuralNet:
         self.head = None
         self.tail = None
         self.random_init()
+        self.set_batch(100)
 
     def random_init(self):
         """
@@ -126,6 +127,14 @@ cdef class NeuralNet:
         self.tail = NetLayer(self.layers[-1], 0)
         self.tail.set_prev(prev)
         prev.set_next(self.tail)
+
+    def set_batch(self, batch_size):
+        # allocate space based on batch size
+        self.batch_size = batch_size
+        curr = self.head
+        while curr != None:
+            curr.set_batch(batch_size)
+            curr = curr.next
 
     def train(self, features, labels, max_iter, batch_size=100, alpha=0.01,
               lamb=0.0, decay=1.0, info=1):
@@ -168,14 +177,10 @@ cdef class NeuralNet:
         assert features.shape[0] == labels.shape[0]
         assert features.shape[1] == self.n_features
         assert labels.shape[1] == self.n_labels
-        assert 0 < batch_size <= features.shape[0]
+        assert batch_size > 0
 
-        # allocate space based on batch size
-        self.batch_size = batch_size
-        curr = self.head
-        while curr != None:
-            curr.set_batch(batch_size)
-            curr = curr.next
+        if batch_size != self.batch_size:
+            self.set_batch(batch_size)
 
         start = time.time()
         for i in xrange(max_iter):
