@@ -43,7 +43,7 @@ class install(_install):
 
 setup(
     name="pyneural",
-    version="0.1.0",
+    version="0.1.1",
     author="Taylor Burmeister",
     author_email="burmeister.taylor@gmail.com",
     description="A simple but fast Python library for training neural networks",
